@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+
+#####################################################
+#
+# PROGRAM       : alf2cacti
+# USE           : alfred srvrstats to cacti script
+# AUTHOR        : James Braid
+# DATE          : 20091027
+#
+# NOTES         : 1. very basic
+#
+#####################################################
+
+use strict;
+use warnings;
+use LWP::Simple;
+use Getopt::Long qw(:config bundling permute);
+
+my $MAITRED_HOST = 'maitred';
+
+sub info {
+
+    print <<END;
+  $0 - turn alfred stats into cacti output
+
+  Options:
+
+      --help, -h      - this help
+      --server, -s    - server hostname to use
+
+END
+
+    exit 1;
+}
+
+GetOptions(
+    'help|h'     => \&info,
+    'server|s=s' => \$MAITRED_HOST,
+) or die "invalid option: $!";
+
+# for testing - don't hammer alfred
+my @srvrstat;
+if (0) {
+open my $SRVRSTAT_H, '<', $ARGV[0] or die "cant open!";
+@srvrstat = <$SRVRSTAT_H>; chomp @srvrstat; close $SRVRSTAT_H;
+} else {
+my $srvrstat_url = sprintf 'http://%s:9000/srvrstat', $MAITRED_HOST;
+my $srvrstat = get $srvrstat_url;
+die "alfred get failed" unless $srvrstat;
+@srvrstat = split /\n/, $srvrstat;
+}
+
+# some cheesy regexes to try and match alfred srvrstat output
+my $output = {};
+$output->{total} = scalar grep { /[\w-]+\s+--/ } @srvrstat;
+$output->{total_farm} = scalar grep { /^r[\w-]+\s+--/ } @srvrstat;
+$output->{active} = scalar grep { /[\w-]+\s+-->/ } @srvrstat;
+$output->{active_farm} = scalar grep { /^r[\w-]+\s+-->/ } @srvrstat;
+$output->{disabled} = scalar grep { /[\w-]+\s+---\s+\(disabled\)/ } @srvrstat;
+$output->{disabled_farm} = scalar grep { /^r[\w-]+\s+---\s+\(disabled\)/ } @srvrstat;
+$output->{nimby} = scalar grep { /[\w+-]\s+---\s+\w+\(nimby\)/ } @srvrstat;
+
+foreach (sort keys %$output) {
+    printf '%s:%s ', $_, $output->{$_};
+}
+
+print "\n";

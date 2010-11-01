@@ -1,0 +1,150 @@
+#!/usr/bin/perl
+#####################################################
+#
+# PROGRAM       : bluearc-metrics
+# USE           : get bluearc metrics via SNMP and output them 
+# AUTHOR        : James Braid
+# DATE          : 20091027
+#
+# NOTES         : 1. very basic
+#               : 2. metrics seem to all be indexed by pnode
+#               : 3. uses rusc
+#
+#####################################################
+
+use strict;
+use warnings;
+use SNMP;
+use Data::Dumper;
+use Getopt::Long qw(:config permute bundling);
+use List::Util qw(first);
+use FindBin;
+
+my $mib = $FindBin::Bin . '/BlueArc.1220.48.mib';
+my $OPT = {};
+my $rusc = '/apps/Linux64/bin/rusc';
+
+GetOptions($OPT,
+    'help|h'        => \&info,
+    'server|s=s',
+    'cifs|c',
+    'nfs|n',
+    'fibre|f',
+    'rusc|r=s',
+    'debug',
+) or die "options parsing failed: $!";
+
+my $bluearc_host = $OPT->{server} || die "no server specified";
+$bluearc_host =~ s/\..*//g;
+my $snmp = new SNMP::Session(DestHost => $bluearc_host, Version => 2);
+die "failed to connect" unless $snmp;
+die "no rusc" unless (-x $rusc);
+
+&SNMP::addMibFiles($mib);
+#$SNMP::debugging = 1;
+
+# look up our vnode ID
+my $vnode_table = $snmp->gettable('clusterVNodeTable');
+#print Dumper $vnode_table;
+
+my $vnode_id = first { $vnode_table->{$_}->{clusterVNodeName} eq $bluearc_host } (keys %$vnode_table);
+die "could not find vnode ID for $bluearc_host" unless $vnode_id;
+
+# get pnode
+my $pnode_id = $vnode_table->{$vnode_id}->{clusterVNodeHostedBy};
+
+#print "vnode=$vnode_id, pnode=$pnode_id, host=$bluearc_host\n";
+
+if ($OPT->{rusc}) {
+    my $cmd = $rusc . ' --period 2 --iterations 2 --groups ' . $OPT->{rusc} . ' ' . $bluearc_host;
+
+    open my $RUSC_H, '-|', $cmd;
+    my %x;
+    foreach my $line (<$RUSC_H>) {
+        next if ($line =~ /[a-z]/i);
+        $line =~ s/^\s+|\s+$//g;
+
+        if ($OPT->{rusc} eq 'basic') {
+            ($x{ops}, $x{fsb}, $x{fsa}, $x{eth_rx}, $x{eth_tx}, $x{fc_rx}, $x{fc_tx}, $x{nv}) = split /\s+/, $line;
+        }
+        if ($OPT->{rusc} eq 'disk') {
+            ($x{vd_reqs}, $x{read_lat}, $x{write_lat}, $x{stripe_write_lat}) = split /\s+/, $line;
+        }
+        if ($OPT->{rusc} eq 'fssec') {
+            ($x{read_hit}, $x{read_ahead_hit}, $x{write_hit}) = split /\s+/, $line;
+        }
+        if ($OPT->{rusc} eq 'nvram') {
+            ($x{nvram_write_limit}, $x{nvram_usage}, $x{nvram_tracker_usage}, $x{nvram_waited_allocs}) = split /\s+/, $line;
+        }
+    }
+    foreach (sort keys %x) {
+        printf '%s:%s ', $_, $x{$_};
+    }
+}
+            
+
+if ($OPT->{nfs}) {
+    my $nfs_table = $snmp->gettable('nfsV3StatsTable')->{$pnode_id};
+    die "no NFS table found for vnode=$vnode_id, hostname=$bluearc_host" unless $nfs_table;
+    foreach (sort keys %$nfs_table) {
+        printf '%s:%s ', $_, $nfs_table->{$_};
+    }
+}
+
+if ($OPT->{cifs}) {
+# XXX wtf - cifsStatsTable doesn't play well with getbulk?
+    my $cifs_table = $snmp->gettable('cifsStatsTable', nogetbulk => 1)->{$pnode_id};
+    die "no CIFS table found for vnode=$vnode_id, hostname=$bluearc_host" unless $cifs_table;
+    foreach (sort keys %$cifs_table) {
+        printf '%s:%s ', 'cifs' . ucfirst $_, $cifs_table->{$_};
+    }
+}
+
+if ($OPT->{fibre}) {
+
+    my %our_fc_table;
+    my %fc_table = %{ $snmp->gettable('fcStatisticsTable') };
+    
+    # now find ports that are attached to this node and are also up
+    my @want = grep { 
+        $fc_table{$_}{fcStatsClusterNode} eq $pnode_id && 
+        $fc_table{$_}{fcStatsInterfaceStatus} eq 1 
+    } (keys %fc_table);
+
+    print Dumper \@want;
+
+    @our_fc_table{@want} = @fc_table{@want};
+
+    #print Dumper \%fc_table;
+    print Dumper \%our_fc_table;
+
+    
+
+}
+
+#my $vol_table = $snmp->gettable('volumeTable');
+#print Dumper $vol_table;
+
+# translate volume ids
+#my @volume_ids = map { $vol_table->{$_}->{volumeSysDriveIndex} } grep { $vol_table->{$_}->{volumeEnterpriseVirtualServer} eq $vnode_id } (keys %$vol_table);
+#my $vol_stats = $vol_table->{$volume_ids[0] . '.0'};
+#my $nvram_stats = $nvram_fs_table->{$volume_ids[0]};
+
+
+print "\n";
+
+sub info {
+    print <<END;
+
+ $0 - bluearc statistics for cacti
+
+ -s --server        - hostname of server to connect to
+ -n --nfs           - NFS stats
+ -c --cifs          - CIFS stats
+ -f --fibre         - fibre channel stats
+ -r --rusc <group>  - rusc stats
+
+END
+
+    exit 1;
+}
