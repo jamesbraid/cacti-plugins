@@ -1,0 +1,51 @@
+<interface>
+    <name>Get LambdaDriver WDM RX/TX stats</name>
+    <description>Queries a host for a list of WDM cards to monitor</description>
+    <index_order_type>numeric</index_order_type>
+    <oid_index>.1.3.6.1.4.1.6926.1.41.4.1.1.1</oid_index>
+    <oid_index_parse>OID/REGEXP:.*\.([0-9]{1,3}\.[0-9]{1,3})$</oid_index_parse>
+    <index_order>oaIndex</index_order>
+
+    <fields>
+        <oaIndex>
+            <name>Index</name>
+            <source>index</source>
+            <direction>input</direction>
+        </oaIndex>
+        <oaLdCardEntityCardIndex>
+            <name>Card Index</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.6926.1.41.4.1.1.1</oid>
+        </oaLdCardEntityCardIndex>
+        <oaLdCardEntityEntityIndex>
+            <name>Entity Index</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.6926.1.41.4.1.1.2</oid>
+        </oaLdCardEntityEntityIndex>
+        <oaLdCardEntityWaveLength>
+            <name>Wavelength</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.6926.1.41.4.1.1.5</oid>
+        </oaLdCardEntityWaveLength>
+        <oaLdCardEntityWdmRxPm>
+            <name>RX Optical Power</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>output</direction>
+            <oid>.1.3.6.1.4.1.6926.1.41.4.1.1.16</oid>
+        </oaLdCardEntityWdmRxPm>
+        <oaLdCardEntityWdmTxPm>
+            <name>TX Optical Power</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>output</direction>
+            <oid>.1.3.6.1.4.1.6926.1.41.4.1.1.17</oid>
+        </oaLdCardEntityWdmTxPm>
+    </fields>
+</interface>
