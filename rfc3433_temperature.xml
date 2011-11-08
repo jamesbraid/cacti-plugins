@@ -1,0 +1,57 @@
+<interface>
+    <name>RFC 3433 temperature sensor</name>
+    <description>Get temperature from RFC 3433 sensor entities</description>
+    <index_order_type>numeric</index_order_type>
+    <oid_index>.1.3.6.1.2.1.47.1.1.1.1.2</oid_index>
+    <oid_index_parse>OID/REGEXP:.*\.([0-9]+)$</oid_index_parse> 
+    <index_order>Index</index_order>
+
+    <fields>
+        <Index>
+            <name>Index</name>
+            <source>index</source>
+            <direction>input</direction>
+        </Index>
+
+        <entPhysicalDescr>
+            <name>Sensor description</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.2.1.47.1.1.1.1.2</oid>
+        </entPhysicalDescr>
+
+        <entPhysicalName>
+            <name>Name</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.2.1.47.1.1.1.1.7</oid>
+        </entPhysicalName>
+
+        <entPhysicalClass>
+            <name>Class</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.2.1.47.1.1.1.1.5</oid>
+        </entPhysicalClass>
+
+        <entPhysicalModelName>
+            <name>Model name</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.2.1.47.1.1.1.1.13</oid>
+        </entPhysicalModelName>
+
+        <entPhySensorValue>
+            <name>Sensor value</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>output</direction>
+            <oid>.1.3.6.1.2.1.99.1.1.1.4</oid>
+        </entPhySensorValue>
+
+    </fields>
+</interface>
