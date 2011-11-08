@@ -1,0 +1,41 @@
+<interface>
+    <name>Get HP MCS sensor table</name>
+    <description>Get sensor information from HP MCS rack</description>
+    <index_order_type>numeric</index_order_type>
+    <oid_index>.1.3.6.1.4.1.232.167.2.4.5.2.1.1</oid_index>
+
+    <fields>
+        <waterCoolUnitSensorIndex>
+            <name>Index</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.232.167.2.4.5.2.1.1</oid>
+        </waterCoolUnitSensorIndex>
+
+        <waterCoolUnitSensorType>
+            <name>Sensor type</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.232.167.2.4.5.2.1.2</oid>
+        </waterCoolUnitSensorType>
+
+        <waterCoolUnitSensorText>
+            <name>Sensor description</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>input</direction>
+            <oid>.1.3.6.1.4.1.232.167.2.4.5.2.1.3</oid>
+        </waterCoolUnitSensorText>
+        
+        <waterCoolUnitSensorValue>
+            <name>Sensor value</name>
+            <method>walk</method>
+            <source>value</source>
+            <direction>output</direction>
+            <oid>.1.3.6.1.4.1.232.167.2.4.5.2.1.5</oid>
+        </waterCoolUnitSensorValue>
+
+    </fields>
+</interface>
